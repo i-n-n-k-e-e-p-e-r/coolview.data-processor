@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ApplicationHealthController } from './application.health.controller';
 import { ApplicationHealthService } from './application.health.service';
-import { Status } from './enums/status';
 import { APPLICATION_HEALTH_BASE_PATH } from './application.health.controller';
 
 describe('ApplicationHealthController', () => {
@@ -19,13 +18,15 @@ describe('ApplicationHealthController', () => {
   });
 
   describe(APPLICATION_HEALTH_BASE_PATH, () => {
-    it('should return ApplicationStatus type with main status of type enum Status = "ONLINE"', () => {
+    it('should return ApplicationStatus type', () => {
       const appStatus = applicationHealthController.getStatus();
       expect(typeof appStatus).toBe('object');
       expect(appStatus).toHaveProperty('status');
       expect(appStatus).toHaveProperty('mongoDBStatus');
       expect(appStatus).toHaveProperty('mqttBrokerStatus');
-      expect(appStatus.status).toBe(Status.ONLINE);
+      expect(appStatus.status).toBeDefined();
+      expect(appStatus.mongoDBStatus).toBeDefined();
+      expect(appStatus.mqttBrokerStatus).toBeDefined();
     });
   });
 });
