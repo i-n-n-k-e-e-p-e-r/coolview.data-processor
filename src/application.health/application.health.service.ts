@@ -1,41 +1,47 @@
 import { Injectable } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 import { Status } from './enums/status';
-import { ApplicationStatus } from './interfaces/application.status';
 import { MqttStatus } from '@nestjs/microservices';
+import { ApplicationStatus } from './interfaces/application.status';
 
 @Injectable()
 export class ApplicationHealthService {
-  private applicationStatus: ApplicationStatus = {
-    status: Status.OFFLINE,
-    mongoDBStatus: Status.OFFLINE,
-    mqttBrokerStatus: Status.OFFLINE,
-  };
+  private mqttBrokerStatus: Status = Status.OFFLINE;
 
-  getStatus(): ApplicationStatus {
-    this.applicationStatus.status = this.isOnline()
-      ? Status.ONLINE
-      : Status.OFFLINE;
-    return this.applicationStatus;
-  }
+  constructor(
+    @InjectConnection('device.data')
+    private readonly mongoConnection: Connection,
+  ) {}
 
-  updateStatus(newStatus: ApplicationStatus): void {
-    this.applicationStatus = newStatus;
-  }
-
-  updateMongoDBStatus(status: Status): void {
-    this.applicationStatus.mongoDBStatus = status;
+  async getStatus(): Promise<ApplicationStatus> {
+    const mongoStatus = await this.testMongoConnection();
+    return {
+      status:
+        mongoStatus && this.mqttBrokerStatus === Status.ONLINE
+          ? Status.ONLINE
+          : Status.OFFLINE,
+      mongoDBStatus: mongoStatus ? Status.ONLINE : Status.OFFLINE,
+      mqttBrokerStatus: this.mqttBrokerStatus,
+    };
   }
 
   updateMqttBrokerStatus(status: MqttStatus): void {
-    this.applicationStatus.mongoDBStatus =
+    this.mqttBrokerStatus =
       status.toString() === 'connected' ? Status.ONLINE : Status.OFFLINE;
   }
 
-  isOnline(): boolean {
-    return (
-      this.applicationStatus.status === Status.ONLINE &&
-      this.applicationStatus.mongoDBStatus === Status.ONLINE &&
-      this.applicationStatus.mqttBrokerStatus === Status.ONLINE
-    );
+  // Manual connection test method
+  async testMongoConnection(): Promise<boolean> {
+    try {
+      const result = await this.mongoConnection?.db?.admin().ping();
+      if (result?.ok !== 1) {
+        throw new Error('MongoDB ping failed');
+      }
+      return true;
+    } catch (error) {
+      console.error('MongoDB ping failed:', error);
+      return false;
+    }
   }
 }

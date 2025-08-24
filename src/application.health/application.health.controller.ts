@@ -12,7 +12,7 @@ export class ApplicationHealthController {
   ) {}
 
   @Get(APPLICATION_HEALTH_BASE_PATH)
-  getStatus(): ApplicationStatus {
-    return this.applicationHealthService.getStatus();
+  async getStatus(): Promise<ApplicationStatus> {
+    return await this.applicationHealthService.getStatus();
   }
 }

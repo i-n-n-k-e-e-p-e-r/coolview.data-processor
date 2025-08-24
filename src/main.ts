@@ -14,6 +14,7 @@ import {
 import * as fs from 'fs';
 
 async function bootstrap() {
+  // Base application with mongo connection
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ logger: true }),
@@ -21,6 +22,7 @@ async function bootstrap() {
   const applicationHealthService = app.get<ApplicationHealthService>(
     ApplicationHealthService,
   );
+
   await app.listen(process.env.APPLICATION_PORT ?? 3000, '0.0.0.0');
 
   // Start MQTT microservice
@@ -59,6 +61,7 @@ async function bootstrap() {
   microservice.status.subscribe((status: MqttStatus) => {
     applicationHealthService.updateMqttBrokerStatus(status);
   });
+
   await microservice.listen();
 }
 void bootstrap();
